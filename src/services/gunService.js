@@ -1,4 +1,5 @@
 import { apiClient, IS_SUPABASE } from '../config/api'
+import { invalidateQueryCache } from '../utils/queryCache'
 
 // ---------------------------------------------------------------------------
 // Normalizer — standardizes product shape whether received from Supabase
@@ -86,6 +87,13 @@ class GunService {
         queryParts.push(`limit=${params.limit}`)
       }
 
+      if (params.offset !== undefined) {
+        queryParts.push(`offset=${params.offset}`)
+      } else if (params.page && params.page > 1 && params.limit) {
+        const offset = (Number(params.page) - 1) * Number(params.limit)
+        queryParts.push(`offset=${offset}`)
+      }
+
       const queryString = queryParts.join('&')
       const data = await apiClient.get(`/rest/v1/products?${queryString}`)
       const list = Array.isArray(data) ? data.map(normalizeProduct) : []
@@ -147,9 +155,12 @@ class GunService {
         headers: { Prefer: 'return=representation' },
       })
       const created = Array.isArray(res) ? res[0] : res
+      invalidateQueryCache('guns:')
       return { success: true, data: normalizeProduct(created) }
     }
-    return apiClient.post('/api/v1/recipes', data)
+    const result = await apiClient.post('/api/v1/recipes', data)
+    invalidateQueryCache('guns:')
+    return result
   }
 
   /**
@@ -180,9 +191,14 @@ class GunService {
         headers: { Prefer: 'return=representation' },
       })
       const updated = Array.isArray(res) ? res[0] : res
+      invalidateQueryCache('guns:')
+      invalidateQueryCache(`gun:${id}`)
       return { success: true, data: normalizeProduct(updated) }
     }
-    return apiClient.put(`/api/v1/recipes/${id}`, data)
+    const result = await apiClient.put(`/api/v1/recipes/${id}`, data)
+    invalidateQueryCache('guns:')
+    invalidateQueryCache(`gun:${id}`)
+    return result
   }
 
   /**
@@ -192,7 +208,10 @@ class GunService {
     if (IS_SUPABASE) {
       return this.updateGun(id, data)
     }
-    return apiClient.patch(`/api/v1/recipes/${id}`, data)
+    const result = await apiClient.patch(`/api/v1/recipes/${id}`, data)
+    invalidateQueryCache('guns:')
+    invalidateQueryCache(`gun:${id}`)
+    return result
   }
 
   /**
@@ -201,9 +220,14 @@ class GunService {
   async deleteGun(id) {
     if (IS_SUPABASE) {
       await apiClient.delete(`/rest/v1/products?id=eq.${id}`)
+      invalidateQueryCache('guns:')
+      invalidateQueryCache(`gun:${id}`)
       return { success: true }
     }
-    return apiClient.delete(`/api/v1/recipes/${id}`)
+    const result = await apiClient.delete(`/api/v1/recipes/${id}`)
+    invalidateQueryCache('guns:')
+    invalidateQueryCache(`gun:${id}`)
+    return result
   }
 }
 
