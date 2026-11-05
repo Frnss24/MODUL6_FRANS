@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import favoriteService from '../services/favoriteService'
 import { getUserIdentifier } from '../services/userService'
+import {
+  getCachedQuery,
+  setCachedQuery,
+  invalidateQueryCache,
+} from '../utils/queryCache'
 
 // ---------------------------------------------------------------------------
 // localStorage fallback — used when the backend is unavailable so that
@@ -29,43 +34,69 @@ const writeLocalFavs = (ids) => {
 // ---------------------------------------------------------------------------
 // useFavorites — list all favourited product IDs.
 //
-// First attempts the server; on failure uses localStorage.
+// First checks queryCache, then attempts the server; on failure uses localStorage.
 // ---------------------------------------------------------------------------
 
 export function useFavorites() {
-  const [favorites, setFavorites] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userIdentifier = getUserIdentifier()
+  const cacheKey = `favorites:${userIdentifier}`
+  const initialCache = getCachedQuery(cacheKey)
+
+  const [favorites, setFavorites] = useState(() => initialCache?.data || [])
+  const [loading, setLoading] = useState(() => !initialCache || initialCache.isStale)
   const [error, setError] = useState(null)
   const [isLocal, setIsLocal] = useState(false)
-  const userIdentifier = getUserIdentifier()
 
-  const fetchFavorites = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+  const fetchFavorites = useCallback(
+    async (forceRefresh = false) => {
+      try {
+        if (forceRefresh) {
+          invalidateQueryCache(cacheKey)
+        } else {
+          const cached = getCachedQuery(cacheKey)
+          if (cached && !cached.isStale && Array.isArray(cached.data)) {
+            setFavorites(cached.data)
+            setIsLocal(false)
+            setLoading(false)
+            return
+          }
+        }
 
-      const response = await favoriteService.getFavorites(userIdentifier)
+        setLoading(true)
+        setError(null)
 
-      if (response.success) {
-        setFavorites(response.data || [])
-        setIsLocal(false)
-      } else {
-        throw new Error(response.message)
+        const response = await favoriteService.getFavorites(userIdentifier)
+
+        if (response.success) {
+          const list = response.data || []
+          setFavorites(list)
+          setCachedQuery(cacheKey, list)
+          setIsLocal(false)
+        } else {
+          throw new Error(response.message)
+        }
+      } catch {
+        // Fallback to localStorage
+        setFavorites(readLocalFavs())
+        setIsLocal(true)
+      } finally {
+        setLoading(false)
       }
-    } catch {
-      // Fallback to localStorage
-      setFavorites(readLocalFavs())
-      setIsLocal(true)
-    } finally {
-      setLoading(false)
-    }
-  }, [userIdentifier])
+    },
+    [userIdentifier, cacheKey],
+  )
 
   useEffect(() => {
-    fetchFavorites()
+    fetchFavorites(false)
   }, [fetchFavorites])
 
-  return { favorites, loading, error, isLocal, refetch: fetchFavorites }
+  return {
+    favorites,
+    loading,
+    error,
+    isLocal,
+    refetch: () => fetchFavorites(true),
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +119,7 @@ export function useToggleFavorite() {
       })
 
       if (response.success) {
+        invalidateQueryCache(`favorites:${userIdentifier}`)
         return response.data
       }
       throw new Error(response.message)
@@ -105,6 +137,7 @@ export function useToggleFavorite() {
         isFavorited = false
       }
       writeLocalFavs(current)
+      invalidateQueryCache(`favorites:${userIdentifier}`)
       return { is_favorited: isFavorited }
     } finally {
       setLoading(false)
@@ -124,7 +157,10 @@ export function useIsFavorited(gunId) {
 
   // Check both server-format (objects with .id) and local-format (plain ids)
   const isFavorited = favorites.some((fav) => {
-    const favId = typeof fav === 'object' && fav !== null ? (fav.id ?? fav.product_id ?? fav.recipe_id) : fav
+    const favId =
+      typeof fav === 'object' && fav !== null
+        ? (fav.id ?? fav.product_id ?? fav.recipe_id)
+        : fav
     return String(favId) === String(gunId)
   })
 
