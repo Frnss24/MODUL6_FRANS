@@ -1,4 +1,6 @@
 import FavoriteButton from '../common/FavoriteButton'
+import ShareButton from '../common/ShareButton'
+import LazyImage from '../common/LazyImage'
 import { formatPrice, truncate } from '../../utils/helpers'
 
 /**
@@ -24,13 +26,12 @@ export default function GunCard({ gun, onSelect, onEdit, onDelete }) {
         onClick={() => onSelect(gun)}
         aria-label={`View ${gun.name}`}
       >
-        <img
+        <LazyImage
           className="card-img"
           src={imgSrc}
           alt={gun.name}
           width="240"
           height="180"
-          loading="lazy"
         />
 
         <span className="name display">{gun.name}</span>
@@ -49,13 +50,17 @@ export default function GunCard({ gun, onSelect, onEdit, onDelete }) {
 
       {/* Floating actions row */}
       <div className="card-actions">
+        <ShareButton gun={gun} />
         <FavoriteButton gunId={gun.id || gun.name} />
 
         {onEdit && (
           <button
             type="button"
             className="card-act-btn"
-            onClick={(e) => { e.stopPropagation(); onEdit(gun) }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(gun)
+            }}
             aria-label={`Edit ${gun.name}`}
             title="Edit"
           >
@@ -67,7 +72,10 @@ export default function GunCard({ gun, onSelect, onEdit, onDelete }) {
           <button
             type="button"
             className="card-act-btn card-act-btn--danger"
-            onClick={(e) => { e.stopPropagation(); onDelete(gun) }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(gun)
+            }}
             aria-label={`Delete ${gun.name}`}
             title="Delete"
           >
