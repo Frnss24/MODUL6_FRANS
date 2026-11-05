@@ -1,0 +1,162 @@
+SCRIPT VIDEO DEMONSTRASI DAN PENJELASAN TUGAS PENGGANTI PRAKTIKUM PPB MODUL 5
+
+Judul Youtube:
+Tugas Pengganti Praktikum PPB Modul 5 - Nama Lengkap - Shift - Kelompok
+
+Format Komentar Pengumpulan:
+NAMA_KELXX_LINK YOUTUBE
+
+
+======================================================================
+BAGIAN 1: PEMBUKAAN
+======================================================================
+
+Halo semuanya, perkenalkan nama saya [Nama Lengkap] dari Shift [Shift] Kelompok [Nomor Kelompok].
+Pada video kali ini, saya akan mendemonstrasikan dan menjelaskan Tugas Pengganti Praktikum Pengembangan Perangkat Bergerak Modul 5, yaitu Progressive Web App bagian kedua dengan integrasi API dan database pribadi.
+
+Pada percobaan ini, aplikasi yang digunakan adalah Bore and Barrel, yaitu aplikasi katalog persenjataan berbasis React dan Vite PWA.
+Ada lima poin utama yang akan saya jelaskan dan demonstrasikan pada video ini:
+Pertama, langkah percobaan sesuai instruksi pada modul, yaitu integrasi API, operasi CRUD, fitur favorit, dan ulasan.
+Kedua, implementasi dan cara kerja fitur Lazy Loading serta Query Caching.
+Ketiga, penjelasan kode dan demonstrasi fitur Sharelink untuk setiap katalog.
+Keempat, penjelasan kode dan demonstrasi fitur Paginasi pada katalog.
+Kelima, penggunaan API dan integrasi ke database Supabase milik pribadi.
+
+
+======================================================================
+BAGIAN 2: INTEGRASI API DAN DATABASE SUPABASE PRIBADI (POIN 1 DAN 5)
+======================================================================
+
+[Tampilkan dashboard Supabase pribadi di browser, lalu buka file .env dan src/config/api.js di VS Code]
+
+Pertama, saya akan menjelaskan integrasi API dan database pribadi sesuai instruksi modul dan ketentuan tugas pengganti.
+Di sini saya tidak menggunakan shared API maupun database bawaan modul, melainkan membuat project Supabase pribadi saya sendiri.
+Pada menu SQL Editor di Supabase pribadi saya, saya telah menjalankan script pembuatan tiga tabel utama, yaitu:
+1. Tabel products untuk menyimpan data katalog seperti nama, kategori atau tipe, kaliber, harga, gambar, deskripsi, spesifikasi, dan langkah perawatan.
+2. Tabel reviews untuk menyimpan ulasan dan rating dari pengguna pada setiap item katalog.
+3. Tabel favorites untuk menyimpan daftar katalog favorit milik masing-masing pengguna.
+Saya juga sudah mengaktifkan Row Level Security beserta policy akses publiknya agar aplikasi dapat melakukan operasi baca, tambah, ubah, dan hapus data melalui REST API Supabase.
+
+Selanjutnya pada file .env di project, saya memasukkan URL project Supabase pribadi saya pada variabel VITE_API_BASE_URL dan kunci publishable pribadi saya pada variabel VITE_SUPABASE_PUBLISHABLE_KEY.
+
+Kemudian pada file src/config/api.js, kita membuat instance Axios bernama apiClient yang membaca konfigurasi dari file .env tersebut.
+Pada request interceptor di baris 36 sampai 47, setiap request ke Supabase secara otomatis menyertakan header apikey dan Authorization Bearer menggunakan kunci Supabase pribadi kita.
+Selain itu, pada response interceptor di baris 52 sampai 80, data response langsung diekstrak melalui response.data dan error dari server dinormalisasi agar pesan error lebih mudah ditampilkan di antarmuka aplikasi.
+
+Lalu pada file src/services/gunService.js, seluruh operasi CRUD katalog diarahkan ke endpoint REST API Supabase pribadi kita, yaitu /rest/v1/products:
+- Fungsi getGuns melakukan HTTP GET ke /rest/v1/products untuk mengambil daftar katalog.
+- Fungsi getGunById mengambil detail satu produk berdasarkan ID.
+- Fungsi createGun melakukan HTTP POST ke /rest/v1/products untuk menambahkan produk baru.
+- Fungsi updateGun melakukan HTTP PATCH untuk memperbarui data produk.
+- Fungsi deleteGun melakukan HTTP DELETE untuk menghapus produk dari database.
+
+[Demonstrasikan singkat di browser: tambah 1 item katalog atau buka detail item, beri rating/review, dan klik tombol hati/favorit]
+
+
+======================================================================
+BAGIAN 3: PENJELASAN DAN DEMONSTRASI LAZY LOADING (POIN 2A)
+======================================================================
+
+[Buka file src/App.jsx dan src/components/common/LazyImage.jsx di VS Code]
+
+Selanjutnya adalah fitur Lazy Loading. Pada aplikasi ini saya menerapkan Lazy Loading di dua level, yaitu level halaman atau komponen melalui Code Splitting, serta level gambar produk.
+
+Pertama, untuk Lazy Loading halaman pada file src/App.jsx baris 16 sampai 23, saya menggunakan fungsi lazy dan komponen Suspense bawaan React.
+Halaman-halaman seperti Catalog, FavoritesPage, ProfilePage, CreateGunPage, EditGunPage, GunDetail, About, dan Contact tidak dimuat sekaligus di awal, melainkan di-import secara dinamis menggunakan React.lazy.
+Kemudian di dalam tag main pada baris 90, seluruh halaman tersebut dibungkus dengan komponen Suspense yang memiliki fallback komponen PageFallback berisi indikator loading.
+Dengan cara ini, bundle JavaScript untuk halaman seperti Favorites atau Create tidak akan diunduh oleh browser sampai pengguna benar-benar membuka halaman tersebut, sehingga waktu muat awal aplikasi menjadi jauh lebih cepat dan ringan.
+
+Kedua, untuk Lazy Loading gambar pada file src/components/common/LazyImage.jsx, saya membuat komponen reusable bernama LazyImage.
+Komponen ini menggunakan IntersectionObserver API pada baris 31 sampai 50 dengan rootMargin sebesar 120 piksel, serta atribut native loading="lazy" dan decoding="async".
+Cara kerjanya adalah elemen gambar baru akan mulai mengunduh file gambar dari URL ketika kartu produk sudah mendekati area pandang layar pengguna. Selama gambar sedang dimuat, aplikasi menampilkan efek animasi kerangka atau shimmer placeholder, dan apabila URL gambar gagal dimuat, komponen otomatis menggantinya dengan gambar fallback default.
+
+
+======================================================================
+BAGIAN 4: PENJELASAN DAN DEMONSTRASI QUERY CACHING (POIN 2B)
+======================================================================
+
+[Buka file src/utils/queryCache.js dan src/hooks/useGuns.js di VS Code]
+
+Berikutnya adalah fitur Query Caching untuk mengoptimalkan pemanggilan API agar tidak melakukan request berulang-ulang ke database untuk data yang sama.
+
+Implementasi utamanya berada pada file src/utils/queryCache.js.
+Di sini saya menerapkan arsitektur cache dua lapis atau dual-layer cache dengan waktu kedaluwarsa atau Time To Live selama 2 menit:
+- Lapis pertama adalah In-Memory Cache menggunakan objek Map pada variabel memoryCache untuk akses instan selama tab browser masih terbuka.
+- Lapis kedua adalah Persistent Cache menggunakan localStorage dengan prefix bb_qcache_ agar data katalog tetap tersimpan walaupun halaman di-refresh atau koneksi internet sedang terputus.
+
+Di dalam file ini terdapat tiga fungsi utama:
+1. Fungsi getCachedQuery(key) untuk memeriksa apakah data dengan kunci tertentu ada di memori atau localStorage dan mengecek apakah umurnya masih di bawah batas TTL 2 menit.
+2. Fungsi setCachedQuery(key, data, ttlMs) untuk menyimpan hasil response API ke dalam Map memori sekaligus ke localStorage beserta waktu kedaluwarsanya.
+3. Fungsi invalidateQueryCache(keyOrPrefix) untuk menghapus cache yang sudah tidak valid ketika terjadi perubahan data.
+
+Integrasi Query Caching ini digunakan pada custom hook di file src/hooks/useGuns.js, useReviews.js, dan useFavorites.js.
+Sebagai contoh pada file src/hooks/useGuns.js baris 16 sampai 77:
+Setiap kali komponen meminta data katalog, hook membentuk cacheKey berdasarkan parameter query.
+Sebelum memanggil gunService.getGuns ke server, fungsi fetchGuns memeriksa getCachedQuery(cacheKey) terlebih dahulu.
+Apabila data ditemukan di cache dan belum kedaluwarsa, maka data langsung diambil dari cache tanpa melakukan request jaringan ke Supabase, dan status fromCache diatur menjadi true.
+Sebaliknya, jika cache belum ada atau pengguna menekan tombol Refresh, aplikasi mengambil data terbaru dari API Supabase lalu menyimpannya ke cache menggunakan setCachedQuery.
+Selain itu, pada file src/services/gunService.js, setiap kali kita melakukan tambah data, edit data, atau hapus data, fungsi invalidateQueryCache('guns:') dipanggil secara otomatis agar cache lama dihapus dan katalog selalu menampilkan data paling baru.
+
+[Tampilkan di browser: tunjukkan badge "Cached" / "Live API" di bagian atas daftar katalog dan klik tombol Refresh untuk melihat perubahan dari Live API menjadi Cached]
+
+
+======================================================================
+BAGIAN 5: PENJELASAN KODE DAN DEMONSTRASI FITUR SHARELINK (POIN 3)
+======================================================================
+
+[Buka file src/utils/helpers.js, src/components/common/ShareButton.jsx, dan src/pages/Catalog.jsx di VS Code]
+
+Selanjutnya saya akan menjelaskan kode untuk fitur Sharelink pada setiap katalog yang ada.
+Fitur Sharelink ini terdiri dari tiga bagian kode yang saling terhubung:
+
+Pertama, fungsi pembuat dan pembaca URL parameter pada file src/utils/helpers.js baris 133 sampai 165:
+- Fungsi buildGunShareUrl(gun) mengambil alamat website saat ini, lalu menambahkan query parameter ?gun= berisi ID unik dari produk katalog tersebut menggunakan objek URL bawaan JavaScript, sehingga menghasilkan tautan langsung menuju produk tersebut.
+- Fungsi getGunQueryParam() membaca nilai parameter ?gun= dari URL browser ketika halaman dibuka.
+- Fungsi setGunQueryParam(gunId) memperbarui URL di address bar browser menggunakan window.history.replaceState tanpa me-reload halaman ketika pengguna membuka atau menutup detail produk.
+
+Kedua, komponen tombol bagikan pada file src/components/common/ShareButton.jsx:
+Komponen ShareButton menerima prop data gun dan dipasang baik di setiap kartu katalog pada komponen GunCard.jsx maupun di halaman detail produk pada komponen GunDetail.jsx.
+Ketika tombol Share diklik, fungsi handleShare pada baris 20 dijalankan:
+- Pertama, fungsi memanggil e.stopPropagation() agar klik pada tombol Share di dalam kartu katalog tidak ikut memicu pembukaan halaman detail.
+- Kedua, fungsi membuat tautan produk menggunakan buildGunShareUrl(gun).
+- Ketiga, jika browser perangkat mendukung fitur berbagi bawaan melalui navigator.share, maka dialog berbagi sistem akan dibuka.
+- Keempat, pada browser desktop atau jika dialog berbagi tidak digunakan, fungsi otomatis menyalin tautan ke clipboard menggunakan navigator.clipboard.writeText(shareUrl), lalu mengubah ikon tombol menjadi tanda centang hijau bertuliskan Copied selama 2 detik sebagai umpan balik visual kepada pengguna.
+
+Ketiga, penanganan deep-link saat tautan dibuka pada file src/pages/Catalog.jsx baris 88 sampai 100:
+Di dalam useEffect pada halaman Catalog, aplikasi memanggil getGunQueryParam(). Apabila URL mengandung parameter ?gun= beserta ID produk, maka aplikasi mencocokkan ID tersebut dengan daftar produk di rawGuns dan secara otomatis memanggil setSelectedGun(found) untuk langsung membuka tampilan detail produk yang dibagikan.
+
+[Demonstrasikan di browser: klik tombol ikon Share pada salah satu kartu katalog sampai muncul tanda centang hijau, lalu buka tab baru, paste link hasil copy yang memiliki akhiran ?gun=..., tekan Enter, dan tunjukkan bahwa halaman langsung membuka detail item katalog tersebut]
+
+
+======================================================================
+BAGIAN 6: PENJELASAN KODE DAN DEMONSTRASI FITUR PAGINASI (POIN 4)
+======================================================================
+
+[Buka file src/utils/helpers.js, src/components/common/Pagination.jsx, dan src/pages/Catalog.jsx di VS Code]
+
+Terakhir adalah penjelasan kode dan demonstrasi fitur Paginasi pada katalog.
+
+Pertama, logika perhitungan paginasi berada pada fungsi paginateItems(items, currentPage, pageSize) di file src/utils/helpers.js baris 107 sampai 131.
+Fungsi ini menerima array katalog yang sudah difilter, nomor halaman aktif, dan batas jumlah item per halaman.
+Di dalamnya, fungsi menghitung total halaman dengan rumus Math.ceil(totalItems / pageSize), memastikan halaman aktif selalu berada dalam rentang yang valid, lalu memotong array menggunakan items.slice(start, start + pageSize).
+Fungsi ini mengembalikan potongan item untuk halaman aktif beserta metadata paginasi seperti currentPage, totalPages, totalItems, startIndex, dan endIndex.
+
+Kedua, pada file src/pages/Catalog.jsx baris 68 sampai 83, terdapat state currentPage dengan nilai awal halaman 1 dan state pageSize dengan nilai awal 3 item per halaman.
+Setiap kali pengguna mengetik pencarian, mengganti filter kategori, atau mengubah urutan sortir, nilai currentPage di-reset kembali ke halaman 1 agar pengguna tidak terjebak di halaman kosong.
+Data hasil potongan dari paginateItems kemudian di-render ke dalam daftar komponen GunCard.
+
+Ketiga, komponen antarmuka paginasi dibuat pada file src/components/common/Pagination.jsx.
+Komponen ini menampilkan:
+- Informasi rentang item yang sedang tampil, misalnya Showing 1 sampai 3 of 6 pieces.
+- Dropdown pemilih jumlah item per halaman, yaitu pilihan 3, 6, 9, atau 12 item per halaman.
+- Tombol navigasi Previous, deretan tombol nomor halaman yang menandai halaman aktif, serta tombol Next yang otomatis dinonaktifkan ketika pengguna sudah berada di halaman pertama atau halaman terakhir.
+
+[Demonstrasikan di browser: tunjukkan katalog yang menampilkan 3 item per halaman, klik tombol halaman 2 atau tombol Next untuk berpindah halaman, lalu ubah pilihan Per Page menjadi 6 dan tunjukkan jumlah item yang tampil menyesuaikan secara langsung]
+
+
+======================================================================
+BAGIAN 7: PENUTUP
+======================================================================
+
+Demikian demonstrasi dan penjelasan langkah percobaan Modul 5 beserta fitur Lazy Loading, Query Caching, Sharelink pada setiap katalog, Paginasi, serta integrasi API dan database Supabase pribadi.
+Mohon maaf apabila ada kekurangan dalam penyampaian, terima kasih.

@@ -2,13 +2,24 @@ import axios from 'axios'
 
 // ---------------------------------------------------------------------------
 // Base URL & Supabase Key Configuration
-// Read from environment variables (.env)
+// Read from environment variables (.env) with personal Supabase fallback
+// so production deployments (e.g. Vercel) work even if env vars are omitted.
 // ---------------------------------------------------------------------------
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const SUPABASE_KEY =
+const DEFAULT_SUPABASE_URL = 'https://xuswtoofovjiedbfxvqp.supabase.co'
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_hm2bbazMFzH06jrj8AzFCQ_lIqhfy8H'
+
+const rawBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_SUPABASE_URL
+).trim()
+const BASE_URL = rawBaseUrl.startsWith('/')
+  ? `https:/${rawBaseUrl}`
+  : rawBaseUrl
+
+const SUPABASE_KEY = (
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  ''
+  DEFAULT_SUPABASE_KEY
+).trim()
 
 const IS_SUPABASE =
   BASE_URL.includes('supabase.co') || Boolean(SUPABASE_KEY)

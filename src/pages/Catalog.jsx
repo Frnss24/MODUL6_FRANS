@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react'
 import {
   RefreshCw,
   Plus,
@@ -10,11 +10,12 @@ import {
 import { useGuns } from '../hooks/useGuns'
 import GUNS_LOCAL from '../data/guns'
 import GunCard from '../components/gun/GunCard'
-import GunDetail from '../components/gun/GunDetail'
 import AdvancedFilter from '../components/common/AdvancedFilter'
 import Pagination from '../components/common/Pagination'
 import ConfirmModal from '../components/modals/ConfirmModal'
 import gunService from '../services/gunService'
+
+const GunDetail = lazy(() => import('../components/gun/GunDetail'))
 import {
   matchesSearch,
   matchesCategory,
@@ -128,15 +129,24 @@ export default function Catalog({ onNavigate }) {
   // ---- If viewing a single product detail ----
   if (selectedGun) {
     return (
-      <GunDetail
-        gun={selectedGun}
-        onBack={() => handleSelectGun(null)}
-        onEdit={(g) => onNavigate && onNavigate('Edit', g)}
-        onDelete={(g) => {
-          handleSelectGun(null)
-          setDeleteTarget(g)
-        }}
-      />
+      <Suspense
+        fallback={
+          <div className="state-box">
+            <Loader size={28} className="spin" />
+            <p>Loading product details…</p>
+          </div>
+        }
+      >
+        <GunDetail
+          gun={selectedGun}
+          onBack={() => handleSelectGun(null)}
+          onEdit={(g) => onNavigate && onNavigate('Edit', g)}
+          onDelete={(g) => {
+            handleSelectGun(null)
+            setDeleteTarget(g)
+          }}
+        />
+      </Suspense>
     )
   }
 

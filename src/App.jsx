@@ -5,15 +5,15 @@ import Footer from './components/Footer.jsx'
 import PWABadge from './components/PWABadge.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import SplashScreen from './components/common/SplashScreen.jsx'
+import Catalog from './pages/Catalog.jsx'
 import gunService from './services/gunService.js'
 import { setGunQueryParam } from './utils/helpers.js'
 import './App.css'
 
 // ---------------------------------------------------------------------------
 // Route / Page Lazy Loading (Code-Splitting via React.lazy & Suspense)
-// Each page chunk is only downloaded when the user navigates to it.
+// Secondary pages and detail views are downloaded on-demand when navigated to.
 // ---------------------------------------------------------------------------
-const Catalog = lazy(() => import('./pages/Catalog.jsx'))
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
 const CreateGunPage = lazy(() => import('./pages/CreateGunPage.jsx'))
