@@ -12,7 +12,7 @@ import { formatPrice, truncate } from '../../utils/helpers'
  * @param {Function} [props.onEdit]  — called when Edit is clicked (admin)
  * @param {Function} [props.onDelete]— called when Delete is clicked (admin)
  */
-export default function GunCard({ gun, onSelect, onEdit, onDelete }) {
+export default function GunCard({ gun, onSelect, onEdit, onDelete, onArchive }) {
   const imgSrc = gun.image_url || gun.image || '/guns/pistol.svg'
   const category = gun.type || gun.category || '—'
   const caliber = gun.caliber || gun.difficulty || ''
@@ -65,6 +65,21 @@ export default function GunCard({ gun, onSelect, onEdit, onDelete }) {
             title="Edit"
           >
             ✏️
+          </button>
+        )}
+
+        {onArchive && (
+          <button
+            type="button"
+            className="card-act-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              onArchive(gun)
+            }}
+            aria-label={`Archive ${gun.name}`}
+            title="Archive"
+          >
+            📦
           </button>
         )}
 
