@@ -20,6 +20,7 @@ import {
   formatDraftTime,
 } from '../utils/draftStorage'
 import ConfirmModal from '../components/modals/ConfirmModal'
+import MultiImagePicker from '../components/common/MultiImagePicker'
 
 /**
  * CreateGunPage — Create a new weapon / hardware item with image upload,
@@ -44,6 +45,7 @@ export default function CreateGunPage({ onBack, onSuccess }) {
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [uploadedImageUrl, setUploadedImageUrl] = useState('')
+  const [extraImages, setExtraImages] = useState([]) // additional images beyond the cover
 
   // Specifications (ingredients in API)
   const [specs, setSpecs] = useState([
@@ -73,6 +75,7 @@ export default function CreateGunPage({ onBack, onSuccess }) {
       specs,
       steps,
       uploadedImageUrl,
+      extraImages,
     }
     const saved = saveDraft(draftData, 'create')
     if (saved) {
@@ -83,7 +86,7 @@ export default function CreateGunPage({ onBack, onSuccess }) {
         setTimeout(() => setSuccessMsg(''), 3000)
       }
     }
-  }, [formData, specs, steps, uploadedImageUrl])
+  }, [formData, specs, steps, uploadedImageUrl, extraImages])
 
   // Auto-save draft every 30 seconds while in form step
   useEffect(() => {
@@ -102,6 +105,7 @@ export default function CreateGunPage({ onBack, onSuccess }) {
       if (draft.formData) setFormData(draft.formData)
       if (draft.specs) setSpecs(draft.specs)
       if (draft.steps) setSteps(draft.steps)
+      if (draft.extraImages) setExtraImages(draft.extraImages)
       if (draft.uploadedImageUrl) {
         setUploadedImageUrl(draft.uploadedImageUrl)
         setImagePreview(draft.uploadedImageUrl)
@@ -262,6 +266,7 @@ export default function CreateGunPage({ onBack, onSuccess }) {
       category: formData.category || 'makanan',
       description: formData.description.trim() || `${formData.type} caliber ${formData.caliber}.`,
       image_url: uploadedImageUrl || '/guns/pistol.svg',
+      images: [uploadedImageUrl || '/guns/pistol.svg', ...extraImages],
       prep_time: 15,
       cook_time: Number(formData.price) || 500, // Price stored in cook_time
       servings: Number(formData.servings) || 1,
@@ -462,6 +467,8 @@ export default function CreateGunPage({ onBack, onSuccess }) {
               Change Image
             </button>
           </div>
+
+          <MultiImagePicker images={extraImages} onChange={setExtraImages} max={5} />
 
           {/* Core Info */}
           <div className="form-grid">
