@@ -14,6 +14,7 @@ import AdvancedFilter from '../components/common/AdvancedFilter'
 import Pagination from '../components/common/Pagination'
 import ConfirmModal from '../components/modals/ConfirmModal'
 import gunService from '../services/gunService'
+import { archiveGun, useArchive } from '../utils/archiveStorage'
 
 const GunDetail = lazy(() => import('../components/gun/GunDetail'))
 import {
@@ -49,15 +50,19 @@ export default function Catalog({ onNavigate }) {
     refetch,
   } = useGuns({ limit: 50 })
   const [useLocal, setUseLocal] = useState(false)
+  const { ids: archivedIds } = useArchive()
 
   // Decide data source
   const rawGuns = useMemo(() => {
     if (useLocal || (error && apiGuns.length === 0)) {
       // Enrich local data with synthetic ids so FavoriteButton, ShareButton and detail work
-      return GUNS_LOCAL.map((g, i) => ({ ...g, id: g.id || `local-${i}` }))
+      return GUNS_LOCAL.map((g, i) => ({ ...g, id: g.id || `local-${i}` })).filter(
+        (g) => !archivedIds.has(String(g.id)),
+      )
     }
-    return apiGuns
-  }, [apiGuns, error, useLocal])
+    // Archived (soft-deleted) catalogs are hidden from the list
+    return apiGuns.filter((g) => !archivedIds.has(String(g.id)))
+  }, [apiGuns, error, useLocal, archivedIds])
 
   // ---- filters / sort ----
   const [search, setSearch] = useState('')
@@ -144,6 +149,10 @@ export default function Catalog({ onNavigate }) {
           onDelete={(g) => {
             handleSelectGun(null)
             setDeleteTarget(g)
+          }}
+          onArchive={(g) => {
+            archiveGun(g)
+            handleSelectGun(null)
           }}
         />
       </Suspense>
@@ -272,6 +281,7 @@ export default function Catalog({ onNavigate }) {
                     onNavigate ? (g) => onNavigate('Edit', g) : undefined
                   }
                   onDelete={setDeleteTarget}
+                  onArchive={archiveGun}
                 />
               ))}
             </ul>
