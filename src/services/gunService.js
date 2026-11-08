@@ -1,5 +1,6 @@
 import { apiClient, IS_SUPABASE } from '../config/api'
 import { invalidateQueryCache } from '../utils/queryCache'
+import { parseImages, encodeImages } from '../utils/imageList'
 
 // ---------------------------------------------------------------------------
 // Normalizer — standardizes product shape whether received from Supabase
@@ -39,6 +40,9 @@ export const normalizeProduct = (item) => {
       ? item.steps
       : ['Verify firearm is completely unloaded and point in safe direction.', 'Inspect receiver and mechanism for maintenance.']
 
+  const images = parseImages(item.image_url || item.image)
+  const cover = images[0] || '/guns/pistol.svg'
+
   return {
     ...item,
     id: item.id,
@@ -48,8 +52,9 @@ export const normalizeProduct = (item) => {
     caliber: item.caliber || 'Standard',
     price: Number(item.price ?? item.cook_time ?? 0),
     description: item.description || '',
-    image_url: item.image_url || item.image || '/guns/pistol.svg',
-    image: item.image_url || item.image || '/guns/pistol.svg',
+    image_url: cover,
+    image: cover,
+    images: images.length ? images : [cover],
     ingredients: specsList,
     steps: stepsList,
   }
@@ -148,7 +153,7 @@ class GunService {
         price: Number(data.price ?? data.cook_time ?? 0),
         description: data.description || '',
         specs: specsArray,
-        image_url: data.image_url || null,
+        image_url: data.images ? encodeImages(data.images) : data.image_url || null,
       }
 
       const res = await apiClient.post('/rest/v1/products', payload, {
@@ -185,7 +190,8 @@ class GunService {
       }
       if (data.description !== undefined) payload.description = data.description
       if (specsArray !== undefined) payload.specs = specsArray
-      if (data.image_url !== undefined) payload.image_url = data.image_url
+      if (data.images) payload.image_url = encodeImages(data.images)
+      else if (data.image_url !== undefined) payload.image_url = data.image_url
 
       const res = await apiClient.patch(`/rest/v1/products?id=eq.${id}`, payload, {
         headers: { Prefer: 'return=representation' },
