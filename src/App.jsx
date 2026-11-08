@@ -8,6 +8,7 @@ import SplashScreen from './components/common/SplashScreen.jsx'
 import Catalog from './pages/Catalog.jsx'
 import gunService from './services/gunService.js'
 import { setGunQueryParam } from './utils/helpers.js'
+import { archiveGun } from './utils/archiveStorage.js'
 import './App.css'
 
 // ---------------------------------------------------------------------------
@@ -19,8 +20,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
 const CreateGunPage = lazy(() => import('./pages/CreateGunPage.jsx'))
 const EditGunPage = lazy(() => import('./pages/EditGunPage.jsx'))
 const GunDetail = lazy(() => import('./components/gun/GunDetail.jsx'))
-const About = lazy(() => import('./pages/About.jsx'))
-const Contact = lazy(() => import('./pages/Contact.jsx'))
 
 function PageFallback() {
   return (
@@ -117,6 +116,11 @@ function App() {
               onBack={handleBackToList}
               onEdit={(g) => handleNavigate('Edit', g)}
               onDelete={(g) => setDeleteTarget(g)}
+              onArchive={(g) => {
+                archiveGun(g)
+                handleBackToList()
+                setTab('Profile')
+              }}
             />
           )}
 
@@ -137,10 +141,11 @@ function App() {
                 />
               )}
               {tab === 'Profile' && (
-                <ProfilePage onReplaySplash={() => setShowSplash(true)} />
+                <ProfilePage
+                  onReplaySplash={() => setShowSplash(true)}
+                  onNavigate={(destination, payload) => handleNavigate(destination, payload)}
+                />
               )}
-              {tab === 'About' && <About />}
-              {tab === 'Contact' && <Contact />}
             </>
           )}
         </Suspense>
