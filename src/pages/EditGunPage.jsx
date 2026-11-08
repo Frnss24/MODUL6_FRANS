@@ -20,6 +20,7 @@ import {
   formatDraftTime,
 } from '../utils/draftStorage'
 import ConfirmModal from '../components/modals/ConfirmModal'
+import MultiImagePicker from '../components/common/MultiImagePicker'
 
 /**
  * EditGunPage — Edit an existing weapon / hardware item.
@@ -46,6 +47,7 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
   })
 
   const [currentImageUrl, setCurrentImageUrl] = useState('')
+  const [extraImages, setExtraImages] = useState([]) // additional images beyond the cover
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -89,6 +91,7 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
             is_featured: Boolean(data.is_featured),
           })
           setCurrentImageUrl(data.image_url || data.image || '/guns/pistol.svg')
+          setExtraImages((data.images || []).slice(1))
 
           if (data.ingredients && data.ingredients.length > 0) {
             setSpecs(data.ingredients.map((ing) => ({
@@ -131,6 +134,7 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
       if (draft.formData) setFormData(draft.formData)
       if (draft.specs) setSpecs(draft.specs)
       if (draft.steps) setSteps(draft.steps)
+      if (draft.extraImages) setExtraImages(draft.extraImages)
       if (draft.imagePreview) {
         setImagePreview(draft.imagePreview)
       }
@@ -152,6 +156,7 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
       specs,
       steps,
       imagePreview: imagePreview || currentImageUrl,
+      extraImages,
     }
     const saved = saveDraft(draftData, targetId)
     if (saved) {
@@ -273,6 +278,7 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
       category: formData.category || 'makanan',
       description: formData.description.trim() || `${formData.type} caliber ${formData.caliber}.`,
       image_url: imagePreview || currentImageUrl || '/guns/pistol.svg',
+      images: [imagePreview || currentImageUrl || '/guns/pistol.svg', ...extraImages],
       prep_time: 15,
       cook_time: Number(formData.price) || 500,
       servings: Number(formData.servings) || 1,
@@ -347,6 +353,8 @@ export default function EditGunPage({ gun, gunId, onBack, onSuccess }) {
       )}
 
       <form onSubmit={handleSubmit} className="entry-form">
+        <MultiImagePicker images={extraImages} onChange={setExtraImages} max={5} />
+
         {/* Imagery Section */}
         <div className="card-box">
           <h2 className="card-box-title">Visual Asset</h2>
